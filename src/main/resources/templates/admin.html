@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">  
+<head>
+<script type="text/javascript" th:src="@{/js/jquery-1.9.1.js}"></script>
+<script type="text/javascript" th:src="@{/js/bootstrap.min.js}"></script>
+<script type="text/javascript" th:src="@{/js/angular.js}"></script>
+<script type="text/javascript" th:src="@{/js/apps.js}"></script>
+<link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+<link rel="stylesheet" th:href="@{/css/custom.css}">
+<meta charset="ISO-8859-1">
+<title>Poll Admin</title>
+<script>
+  $(document).ready(function(){
+	  //startOnLoadToDo();
+	 });
+ </script>
+<script>
+var app = angular.module("pollAdmin", []);
+app.controller("AppController", function($scope, $http) {
+	function _refreshExpertArea() {
+		$http({
+			method : 'GET',
+			url : "http://localhost:9090/data/expertArea"
+		}).then(function successCallback(response) {
+			LABEL_ARRAY = response.data;
+			console.log(LABEL_ARRAY);
+			showExprtArea(LABEL_ARRAY);
+		}, function errorCallback(response) {
+			_error(response);
+		});
+	}
+	
+	$scope._voteCandidate = function() {
+		var candidate_id = document.getElementById('candidate_id').value;
+		$http({
+			method : 'GET',
+			url : 'http://localhost:9090/candidate/vote/'+candidate_id
+		}).then(function successCallback(response) {
+			if(response.data!=null){
+				if(response.data=='Y'){
+					alert("You voted successfully.");
+					_refreshCandidate();
+				}
+				else if(response.data=='NA') alert("You already voted for candidate.");
+				else alert("Error in voting.")
+				$('#myModal').modal('hide');
+			}
+		}, function errorCallback(response) {
+			_error(response);
+		});
+	}
+	
+	function _refreshCandidate() {
+		$http({
+			method : 'GET',
+			url : "http://localhost:9090/candidate/getlist"
+		}).then(function successCallback(response) {
+			console.log(response.data);
+			$('#candidateTable tbody').empty();
+			$("#voteTable tbody").empty();
+			showCandidateList(response.data);
+		}, function errorCallback(response) {
+			_error(response);
+		});
+	}
+	
+	$scope._addExpArea = function() {
+		var dataObj = {"is_deleted":"N","id":"","expertarea":document.getElementById("expertarea").value};
+		$http({
+			method : 'POST',
+			data : dataObj,
+			dataType : "json",
+	       contentType : "application/json",
+			url : 'http://localhost:9090/data/saveExprtArea/'
+		}).then(function successCallback(response) {
+			if(response.data.id!="" && response.data.id>0){
+				alert("expert area added.");
+				$('#addNewExpertModal').modal('hide');
+				$('#expList tbody').empty();
+				_refreshExpertArea();
+				document.getElementById("expertAreaForm").reset();
+			}else{
+				alert("expert area already exist.");
+			}
+		}, function errorCallback(response) {
+			_error(response);
+		});
+	}
+	function _validateName(){
+		var name = document.getElementById("hackername");
+		if(name!=undefined && name.value==''){
+			alert("Kindly enter candidate name.");
+			name.focus();
+			return false;
+		}
+	}
+	function _addCandidateDetails(){
+		var created_by = document.getElementById("created_by").value;
+		var sessionKey = document.getElementById("sessionKey").value;
+		var exptArea = [];
+		var table = document.getElementById("expertAreaTable");
+		for (var i = 0, row; row = table.rows[i]; i++) {
+			var input = document.getElementById("input_"+i);
+			var rating = input.value;
+			var data = input.getAttribute("data");
+			var expertarea = data.split("_")[1];
+			var deletedComp = i+"_delete_"+expertarea;
+			var deleteLink = document.getElementById(deletedComp);
+			var deleted = deleteLink.getAttribute("deleted");
+			var exptObj = {"candidate_id":"0","expertarea":expertarea,"rating":rating};
+			if(deleted=='N') exptArea.push(exptObj);
+		}
+		_validateName();
+		var candObj = {"hackername":document.getElementById("hackername").value,"solved_challanges":document.getElementById("solved_challanges").value,"explevel":document.getElementById("explevel").value};
+		var dataObj ={"candData":candObj,"candidateExpertArea":exptArea};
+		$http({
+			method : 'POST',
+			data : dataObj,
+			dataType : "json",
+	       contentType : "application/json",
+			url : 'http://localhost:9090/candidate/saveCandidate/'
+		}).then(function successCallback(response) {
+			if(response.data.id>1){
+				document.getElementById("addToDo_Form").reset();
+				$('#myModal').modal('hide');
+				_refreshCandidate();
+				alert("Candidate details added successfully.");
+			}else if(response.data.id==-1){
+				return false;
+			}
+			
+		}, function errorCallback(response) {
+			_error(response);
+		});
+	}
+	
+	function _editCandidateDetails(){
+		var created_by = document.getElementById("created_by").value;
+		var sessionKey = document.getElementById("sessionKey").value;
+		var candidate_id = document.getElementById('candidate_id').value;
+		var exptArea = [];
+		var table = document.getElementById("expertAreaTable");
+		for (var i = 0, row; row = table.rows[i]; i++) {
+			var input = document.getElementById("input_"+i);
+			var rating = input.value;
+			var data = input.getAttribute("data");
+			var dataid = input.getAttribute("dataid");
+			var expertarea = data.split("_")[1];
+			var deletedComp = dataid+"_delete_"+expertarea;
+			
+			var deleted = "N";
+			var deleteLink = document.getElementById(deletedComp);
+			if(deleteLink!=undefined || deleteLink!=null) deleted = deleteLink.getAttribute("deleted");
+			var exptObj = {"candidate_id":candidate_id,"expertarea":expertarea,"rating":rating,"deleted":deleted};
+			//if(deleted=='N')
+				exptArea.push(exptObj);
+		}
+		_validateName();
+		var candObj = {"id":candidate_id,"hackername":document.getElementById("hackername").value,"solved_challanges":document.getElementById("solved_challanges").value,"explevel":document.getElementById("explevel").value};
+		var dataObj ={"candData":candObj,"candidateExpertArea":exptArea};
+		$http({
+			method : 'POST',
+			data : dataObj,
+			dataType : "json",
+	       contentType : "application/json",
+			url : 'http://localhost:9090/candidate/updateCandidate/'
+		}).then(function successCallback(response) {
+			if(response.data.id==-2){
+				document.getElementById("addToDo_Form").reset();
+				$('#myModal').modal('hide');
+				alert("Details updated successfully.");
+				_refreshCandidate();
+			}else if(response.data.id==-1){
+				alert("Kindly enter candidate name.");
+				return false;
+			}else if(response.data.id==-3){
+				alert("Error in updating expert area.");
+				_refreshCandidate();
+				return false;
+			}
+			
+		}, function errorCallback(response) {
+			_error(response);
+		});
+	}
+	$scope._addCandidate = function(element) {
+		var buttonValue = element.currentTarget.value;
+		if(buttonValue=='Edit candidate'){
+			_editCandidateDetails();
+		}else{
+			_addCandidateDetails();
+		}
+		
+	}
+	
+	$scope._userLogin = function() {
+		var dataObj = {"login_id":$scope.login_id,"password":$scope.user_passowrd};
+		if($scope.login_id==undefined || $scope.undefined==''){
+			alert("Kindly enter email/password.");
+			return false;
+		}else if($scope.login_id=='' || $scope.user_passowrd==''){
+			alert("Kindly enter email/password.");
+			return false;
+		}
+		$http({
+			method : 'POST',
+			data : dataObj,
+			dataType : "json",
+	       contentType : "application/json",
+			url : 'http://localhost:9090/userservice/login/'
+		}).then(function successCallback(response) {
+			if(response.data!=null){
+				if(response.data.login_success=='Y'){
+					$scope.user_index = response.data.id;
+					loginUser(response.data);
+					_refreshExpertArea();
+					_refreshCandidate();
+					$('#voteTable tbody').empty();
+					$('#expList tbody').empty();
+				}else{
+					alert(response.data.login_success);
+					return false;
+				}
+			}
+		}, function errorCallback(response) {
+			_error(response);
+		});
+	}
+	
+	function _error(response) {
+		console.log(response.statusText);
+	}
+});
+</script>
+</head>
+ <body ng-app="pollAdmin" ng-controller="AppController">
+  <form ng-model="main_form">
+  	<input type="hidden"id="created_by" ng-model="user_index">
+  	<input type="hidden" id="sessionKey" ng-model="user_session">
+  </form>
+   <nav class="navbar navbar-inverse">
+   	 <div class="container-fluid">
+    <div class="navbar-header">
+     <a class="navbar-brand" href="#"><!-- <img src="resources/css//todo.png" style="height: 20px;"> -->Hackers Poll</a>
+    </div>
+    <ul class="nav navbar-nav">
+      <li class="active"><a href="#">Home</a></li>
+	  <li id="addNewExpertArea" style="display:none"><a data-toggle="modal" data-target="#addNewExpertModal">Add new expert area</a></li>
+	  <li id="viewAllExpert" style="display:none"><a data-toggle="modal" data-target="#viewExprtModal">View all expert area</a></li>
+	   <li id="viewAlVote" style="display:none"><a data-toggle="modal" data-target="#viewVotes">View all candidates vote</a></li>
+    </ul>
+    <ul class="nav navbar-nav navbar-right" id="userListRight">
+      <li id="loginlink"><a href="#" data-toggle="modal" data-target="#loginModal"><span class="glyphicon glyphicon-log-in" ></span> Sign in</a></li>
+      <li id="logOutLink" style="display:none"><a href="#" onclick="logout();"><span class="glyphicon glyphicon-log-out"></span> Sign out</a></li>
+    </ul>
+  </div>
+   </nav>
+	<div id="mainDiv" style="display:none">
+				<form ng-model="filterCandidate_form">
+					<div class="row">
+						<div class="col-sm-7"></div>
+						<div class="col-sm-2"><label>Filter Candidate</label></div>
+						<div class="col-sm-3">
+							<select id="filterCandidate" class="form-control" onchange="sortCandidate(this);">
+							<option value="" selected>--select--</option>
+							<option value="name">By Name</option>
+							<option value="challange">By No. of challenge solved</option>
+							<option value="explevel">Expertise Level</option>
+							</select>
+						</div>
+					</div>
+				</form>
+		<div class="row">
+			<div class="col-md-4">
+			</div>
+			<div class="col-md-8" id="LabelListLeft">
+				<div class="myContainer">
+					<p>
+						<label for="new-task">Add a Hacker</label>
+						<button type="button" class="btn btn-info" data-toggle="modal" onclick="showMyModal();" data-target="#myModal">Add</button>
+					</p>
+				</div>
+	
+			</div>
+		</div>
+		<div class="table-responsive">          
+  <table class="table" id="candidateTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>No. of challenge solved</th>
+        <th>Expertise Level</th>
+        <th></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      
+    </tbody>
+  </table>
+  </div>
+	</div>
+	  <!-- Login Modal content-->
+	 <div class="modal fade" id="loginModal" role="dialog">
+    <div class="modal-dialog">
+      <!-- Modal content-->
+      <form ng-model="loginForm" id="login_form">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Login</h4>
+        </div>
+        <div class="modal-body">
+           <div class="form-group">
+		   <input ng-model="login_id" class="form-control inputBox" type="text" placeholder="email id" >
+		   <input ng-model="user_passowrd" class="form-control inputBox" type="password" placeholder="password" >
+		  </div>
+		   <div class="row button-center">
+			   <button type="button" class="btn btn-success" ng-click="_userLogin();">Login</button>
+			   <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+		   </div>
+        </div>
+      </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- modal popup -->
+  <div class="modal fade" id="myModal" role="dialog">
+    <div class="modal-dialog">
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" onclick="closeModal();">&times;</button>
+          <h4 class="modal-title" style="text-align: center">Hacker Details</h4>
+        </div>
+        <form ng-model="addToDoForm" id="addToDo_Form">
+         	<div class="modal-body" id= "modal-body-edit">
+         	    <div class="row">
+         	    	<input type="hidden" id="candidate_id">
+		            <div class="col-sm-4"><label for="hackername">Candidate Name</label></div>
+		            <div class="col-sm-8">
+		               <input id="hackername" ng-model="hackername" class="form-control inputBox" type="text" placeholder="hacker name" required="required">
+					</div>
+				</div>
+				<div class="row">
+		            <div class="col-sm-4"><label for="solved_challanges">No. of challenge solved</label></div>
+		            <div class="col-sm-8">
+		               <input id="solved_challanges" ng-model="solved_challanges" class="form-control inputBox" type="number" max="1000" min="1" maxlength="4" value="0" placeholder="number of challange solved" >
+					</div>
+				</div>
+				<div class="row">
+		            <div class="col-sm-4"><label for="explevel">Expertise Level</label></div>
+		            <div class="col-sm-8">
+		                 <input id="explevel" ng-model="explevel" class="form-control inputBox" type="number" max="5" min="1" maxlength="4" placeholder="experties level" value="0">
+		            </div>
+				</div>
+				<div class="row">
+		            <div class="col-sm-4"><label for="expIn">Expert in</label></div>
+		            <div class="col-sm-4">
+					<select class="form-control" id="expertList" ng-model="expertList" style=" order-radius: 0px !important;">
+		               		<option value="" selected>--Select--</option>
+					</select>
+					</div>
+					<div class="col-sm-4">
+			        	 <input type="button" class="btn btn-success" onclick="addExpertAreaTable();" id="addExpertArea" value="Add expert area">
+					</div>
+		        </div>
+					<div class="row">
+				<div class="col-sm-4"></div>
+					<div class="col-sm-4">
+						<table id="expertAreaTable" class="table-responsive"></table>
+					</div>
+					
+				</div>
+		   <div class="row button-center">
+           	 <input type="button" class="btn btn-success" ng-click="_addCandidate($event);" id="addCandidateButton" value="Save candidate details">
+           	 <input type="button" class="btn btn-primary" ng-click="_voteCandidate();" id="voteCandidateButton" value="Vote">
+		     <button type="button" class="btn btn-danger" onclick="closeModal();">Cancel</button>
+           </div>
+		  
+        </div>
+         </form>
+      </div>
+    </div>
+  </div>
+  
+  <!-- forget password -->
+  <div class="modal fade" id="forgetPasswordModal" role="dialog">
+    <div class="modal-dialog">
+      <!-- Modal content-->
+      <form ng-model="recov_Form" id="recov_form">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Password Recovery</h4>
+        </div>
+        <div class="modal-body">
+           <div class="form-group">
+		   <input class="form-control inputBox" type="text" placeholder="recovery email" id="recovery_email" >
+		  </div>
+		   <button type="button" class="btn btn-success" onclick="_getPassword();">Get Password</button>
+		   <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+      </form>
+    </div>
+  </div>
+  
+	   <!-- add expertArea pop up html -->
+	  <div class="modal fade" id="addNewExpertModal" role="dialog">
+	    <div class="modal-dialog">
+	      <!-- Modal content-->
+	      <div class="modal-content">
+	        <div class="modal-header">
+	          <button type="button" class="close" data-dismiss="modal">&times;</button>
+	          <h4 class="modal-title">Create new expert area</h4>
+	        </div>
+	        <div class="modal-body">
+	           <div class="form-group">
+			   	<form id="expertAreaForm">
+			   		<input id="expertarea" ng-model='expertarea' class="form-control inputBox" type="text" placeholder="Python" >
+			   		</form>
+			  </div>
+			   <div class="row button-center">
+				   <button type="button" class="btn btn-success" ng-click="_addExpArea();">Add</button>
+				   <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+			   </div>
+	        </div>
+	      </div>
+	      
+	    </div>
+	  </div>
+	  
+	<!-- add expert area pop up html -->
+  <div class="modal fade" id="viewExprtModal" role="dialog">
+    <div class="modal-dialog">
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title" style="text-align: center">expert area</h4>
+        </div>
+        <div class="modal-body" style="text-align: center">
+           <div class="table-responsive">
+		   	<table id="expList" class="table">
+		   	<tbody></tbody>
+		   	</table>
+		  	</div>
+		  	<div class="row button-center">
+		  		 <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+		  	</div>
+		  
+        </div>
+      </div>
+      
+    </div>
+  </div>
+  
+  <!-- add expert area pop up html -->
+  <div class="modal fade" id="viewVotes" role="dialog">
+    <div class="modal-dialog">
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title" style="text-align: center">Vote details</h4>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive"> 
+		   	<table id="voteTable" class="table">
+		   		<thead>
+				      <tr>
+				        <th>Candidate name</th>
+				        <th>Total votes</th>
+				      </tr>
+    			</thead>
+		   		<tbody>
+      
+    			</tbody>		
+		   	</table>
+		  	</div>
+		  	<div class="row button-center">
+		   	<button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+		   </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</body>
+</html>

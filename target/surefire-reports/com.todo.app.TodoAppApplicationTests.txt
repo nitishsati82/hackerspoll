@@ -1,0 +1,7 @@
+-------------------------------------------------------------------------------
+Test set: com.todo.app.TodoAppApplicationTests
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 1.229 s <<< FAILURE! - in com.todo.app.TodoAppApplicationTests
+com.todo.app.TodoAppApplicationTests  Time elapsed: 1.224 s  <<< ERROR!
+java.lang.IllegalStateException: Unable to find a @SpringBootConfiguration, you need to use @ContextConfiguration or @SpringBootTest(classes=...) with your test
+
