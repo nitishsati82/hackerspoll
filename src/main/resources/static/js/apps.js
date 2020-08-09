@@ -218,7 +218,7 @@ function deleteCandidate(obj){
 	var data = $(obj).attr("data");
 	var id = $(obj).attr("id");
 	var candidateId = id.split("_")[1];
-	var deleteC = showConirmPopup("Are you sure to delete expert area.");
+	var deleteC = showConirmPopup("Are you sure to delete candidate data");
 	if(!deleteC)return false;
 	//if(data=='')return true;
 	var parentIndex = obj.parentElement.parentElement.parentElement.rowIndex;
@@ -283,6 +283,7 @@ function logout(){
 				$('#mainDiv').hide();
 				$('#viewAllExpert').hide();
 				$('#viewAlVote').hide();
+				$('#startOrganize').show();
 				created_by.value = "";
 				sessionKey.value = "";
 			}
@@ -304,6 +305,7 @@ function loginUser(data){
 		$('#mainDiv').show();
 		$('#viewAllExpert').show();
 		$('#viewAlVote').show();
+		$('#startOrganize').hide();
 		$('#addNewExpertArea').show();
 		var created_by = document.getElementById("created_by");
 		var sessionKey = document.getElementById("sessionKey");
