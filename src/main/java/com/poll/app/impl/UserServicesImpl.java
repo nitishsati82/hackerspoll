@@ -22,7 +22,7 @@ public class UserServicesImpl implements UserServices {
 		UserData user = userServices.getUserDetails(userData.getLogin_id(),userData.getPassword());
 		if(user==null) {
 			user = new UserData();
-			user.setLogin_success("Email/password not matched.");
+			user.setLogin_success("login id/password not matched.");
 			return user;
 		}
 		if(user!=null && user.getId()>0) {

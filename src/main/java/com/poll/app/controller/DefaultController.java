@@ -11,6 +11,10 @@ public class DefaultController {
 	public String adminUrl() {
 		return "admin";
 	}
+	@RequestMapping(path = "",method = RequestMethod.GET)
+	public String votinScreen() {
+		return "voting";
+	}
 	@RequestMapping(path = "/voting",method = RequestMethod.GET)
 	public String votingUrl() {
 		return "voting";
