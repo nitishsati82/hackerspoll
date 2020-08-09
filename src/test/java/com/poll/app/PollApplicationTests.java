@@ -1,10 +1,10 @@
-package com.todo.app;
+package com.poll.app;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class TodoAppApplicationTests {
+class PollApplicationTests {
 
 	@Test
 	void contextLoads() {
